@@ -1,0 +1,322 @@
+﻿<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArciWeb-Portal v1.31</title>
+    
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --primary: #3b82f6;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --text: #f8fafc;
+        }
+
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; padding: 20px;
+            display: flex; justify-content: center;
+        }
+
+        .app-container { width: 100%; max-width: 500px; }
+        header { text-align: center; margin-bottom: 25px; }
+        h1 { margin: 0; font-size: 1.8rem; color: var(--primary); }
+        .version { font-size: 0.8rem; opacity: 0.6; }
+
+        /* Auth Card */
+        .auth-card { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .input-group { margin-bottom: 15px; text-align: left; position: relative; }
+        label { display: block; margin-bottom: 5px; font-size: 0.9rem; }
+        input { 
+            width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155;
+            background: #0f172a; color: white; box-sizing: border-box;
+            padding-right: 45px;
+        }
+        .show-pass-btn {
+            position: absolute; right: 10px; top: 32px;
+            background: none; border: none; color: var(--primary);
+            cursor: pointer; font-size: 1.1rem;
+        }
+        
+        .btn-row { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; display: none; }
+        
+        button { 
+            padding: 15px 10px; border: none; border-radius: 10px; 
+            cursor: pointer; font-weight: 600; font-size: 0.95rem;
+            transition: 0.2s;
+        }
+        button:active { transform: scale(0.96); }
+        .btn-blue { background: var(--primary); color: white; }
+        .btn-green { background: var(--secondary); color: white; }
+        .btn-red { background: var(--danger); color: white; grid-column: span 2; }
+        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+        .btn-text { background: none; color: #94a3b8; font-size: 0.8rem; text-decoration: underline; }
+
+        /* Modals */
+        .modal { 
+            display: none; position: fixed; inset: 0; 
+            background: rgba(0,0,0,0.9); z-index: 100;
+            align-items: center; justify-content: center; padding: 10px;
+        }
+        .modal-content { background: var(--card); width: 100%; max-width: 400px; padding: 20px; border-radius: 15px; }
+        .slot { 
+            background: #334155; margin-bottom: 10px; padding: 15px; 
+            border-radius: 10px; display: flex; flex-direction: column; gap: 10px;
+        }
+        .slot-info { font-weight: bold; border-bottom: 1px solid #475569; padding-bottom: 5px; }
+        .slot-btns { display: flex; gap: 8px; }
+        .slot-btns button { padding: 8px; flex: 1; font-size: 0.8rem; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1>ArciWeb-Portal</h1>
+            <div class="version">v1.31</div>
+        </header>
+
+        <div id="auth-ui" class="auth-card">
+            <h3 id="auth-title">Prihlásenie</h3>
+            
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" id="email" placeholder="vas@email.com">
+            </div>
+
+            <div class="input-group" id="pass-group">
+                <label>Heslo</label>
+                <input type="password" id="password" placeholder="******">
+                <button class="show-pass-btn" type="button" onclick="togglePass('password')">👁️</button>
+            </div>
+
+            <div class="input-group" id="confirm-pass-group" style="display: none;">
+                <label>Zopakovať heslo</label>
+                <input type="password" id="confirm-password" placeholder="******">
+                <button class="show-pass-btn" type="button" onclick="togglePass('confirm-password')">👁️</button>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn-blue" id="main-auth-btn">Prihlásiť sa</button>
+                <button class="btn-outline" id="toggle-auth-btn">Registrácia</button>
+                <button class="btn-text" id="forgot-pass-btn">Zabudli ste heslo?</button>
+            </div>
+        </div>
+
+        <div id="main-menu" class="grid">
+            <button class="btn-blue" onclick="copySnippet()">1. Copy</button>
+            <button class="btn-blue" onclick="openCMTracker()">2. CMTracker</button>
+            <button class="btn-blue" onclick="window.open('https://milanmajk2106.github.io/ArciApps-KlubMerger-/', '_blank')">3. KlubMerger</button>
+            <button class="btn-blue" onclick="window.open('https://milanmajk2106.github.io/Arciapps-StatsKeeper/index.html', '_blank')">4. StatsKeeper</button>
+            <button class="btn-green" id="btn-saveload">5. Save / Load</button>
+            <button class="btn-red" id="btn-logout">6. Log off</button>
+            <button id="btn-delete-acc" style="grid-column: span 2; background:none; color: #64748b; font-size: 0.7rem; border:none; margin-top:10px; cursor:pointer;">Zmazať účet</button>
+        </div>
+    </div>
+
+    <div id="saveModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-top:0">Cloud Savy</h2>
+            <div id="slots-container"></div>
+            <button class="btn-outline" style="width:100%; margin-top: 15px;" id="close-modal">Zavrieť</button>
+        </div>
+    </div>
+
+    <input type="file" id="file-input" style="display:none" accept=".txt">
+
+    <script>
+        function togglePass(id) {
+            const el = document.getElementById(id);
+            el.type = el.type === "password" ? "text" : "password";
+        }
+
+        function copySnippet() {
+            const code = `(function() { const nazovTimu = prompt("Zadajte názov tímu:", "Slovan"); if (!nazovTimu) return; const table = document.querySelector('table'); const headerCells = Array.from(table.querySelectorAll('th')); const headerMap = headerCells.map(th => th.innerText.trim().toUpperCase()); const findIdx = (label) => headerMap.findIndex(h => h.includes(label)); const idx = { player: findIdx('PLAYER'), ovr: findIdx('OVR'), app: findIdx('APP'), gls: findIdx('GLS'), ast: findIdx('AST'), yc: findIdx('YC'), rc: findIdx('RC'), age: findIdx('AGE'), hgt: findIdx('HGT'), wgt: findIdx('WGT'), foot: findIdx('FOOT'), val: findIdx('VAL'), wag: findIdx('WAG') }; const rows = table.querySelectorAll('tbody tr'); let output = "Klub : " + nazovTimu + "\\n\\n\\n\\n"; rows.forEach(row => { const cells = row.querySelectorAll('td'); if (cells.length > 5 && idx.player !== -1) { let playerLines = Array.from(cells[idx.player].innerText.split('\\n')).map(line => line.trim()).filter(line => line.length > 0); let meno = ""; let pozicia = ""; let loanPrefix = ""; if (playerLines[0] === "L") { loanPrefix = "L\\n \\n"; meno = playerLines[1] || ""; pozicia = playerLines[2] || ""; } else { meno = playerLines[0] || ""; pozicia = playerLines[1] || ""; } if (!meno) return; const getVal = (i) => { if (i === -1 || !cells[i]) return "-"; let v = cells[i].innerText.trim(); return (v === "" || v === "visibility_off" || v === "-") ? "-" : v; }; output += loanPrefix + meno + "\\n \\n" + pozicia + "\\n \\n"; output += getVal(idx.ovr) + "\\n"; output += getVal(idx.app) + "\\n"; output += getVal(idx.gls) + "\\n"; output += getVal(idx.ast) + "\\n"; output += getVal(idx.yc) + "\\n"; output += getVal(idx.rc) + "\\n"; output += getVal(idx.age) + "\\n"; output += getVal(idx.hgt) + "\\n"; output += getVal(idx.wgt) + "\\n"; output += getVal(idx.foot) + "\\n"; output += getVal(idx.val) + "\\n"; output += getVal(idx.wag) + "\\n"; output += " \\n \\n"; } }); const blob = new Blob([output], { type: 'text/plain;charset=utf-8' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = nazovTimu + ".txt"; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); })();`;
+            navigator.clipboard.writeText(code).then(() => alert("Kód skopírovaný do schránky!"));
+        }
+
+        function openCMTracker() {
+            const target = "https://cmtracker.net/speedy2106?mt=0&ci=696339261b23fc6e989ec6c0";
+            const fallback = "https://cmtracker.net";
+            const win = window.open(target, '_blank');
+            
+            setTimeout(() => {
+                if (confirm("Načítal sa web správne? Ak nie, kliknite na OK pre domovskú stránku CMTracker.")) {
+                    // Užívateľ potvrdil, že je to OK, nič nerobíme
+                } else {
+                    window.open(fallback, '_blank');
+                }
+            }, 15000);
+        }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, deleteUser, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCecCsv3cssJvp24LK7f5ujYuI3vGqmOLI",
+            authDomain: "arciapps-portal.firebaseapp.com",
+            projectId: "arciapps-portal",
+            storageBucket: "arciapps-portal.firebasestorage.app",
+            messagingSenderId: "186149546972",
+            appId: "1:186149546972:web:17e70af0e951398401fd19",
+            measurementId: "G-YYSGFTYWKH"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const authUi = document.getElementById('auth-ui');
+        const mainMenu = document.getElementById('main-menu');
+        const confirmPassGroup = document.getElementById('confirm-pass-group');
+        const mainAuthBtn = document.getElementById('main-auth-btn');
+        const toggleAuthBtn = document.getElementById('toggle-auth-btn');
+        const forgotBtn = document.getElementById('forgot-pass-btn');
+        const saveModal = document.getElementById('saveModal');
+        const fileInput = document.getElementById('file-input');
+
+        let isLogin = true;
+        let activeSlot = null;
+
+        // AUTH TOGGLE
+        toggleAuthBtn.onclick = () => {
+            isLogin = !isLogin;
+            document.getElementById('auth-title').innerText = isLogin ? "Prihlásenie" : "Registrácia";
+            mainAuthBtn.innerText = isLogin ? "Prihlásiť sa" : "Vytvoriť účet";
+            toggleAuthBtn.innerText = isLogin ? "Prepnúť na Registráciu" : "Mám účet (Prihlásenie)";
+            confirmPassGroup.style.display = isLogin ? "none" : "block";
+            forgotBtn.style.display = isLogin ? "block" : "none";
+        };
+
+        // FORGOT PASSWORD
+        forgotBtn.onclick = async () => {
+            const email = document.getElementById('email').value;
+            if(!email) return alert("Zadajte svoj email pre obnovu hesla!");
+            try {
+                await sendPasswordResetEmail(auth, email);
+                alert("Email na obnovu hesla bol odoslaný. Skontrolujte si schránku (aj spam).");
+            } catch(e) { alert("Chyba: " + e.message); }
+        };
+
+        // MAIN AUTH ACTION
+        mainAuthBtn.onclick = async () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            const confirmVal = document.getElementById('confirm-password').value;
+
+            if(!email || !pass) return alert("Vyplňte všetky polia!");
+
+            try {
+                if(isLogin) {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                } else {
+                    if(pass !== confirmVal) return alert("Heslá sa nezhodujú!");
+                    await createUserWithEmailAndPassword(auth, email, pass);
+                    alert("Účet úspešne vytvorený!");
+                }
+            } catch (e) { alert("Chyba: " + e.message); }
+        };
+
+        // UI STATE LISTENER
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                authUi.classList.add('hidden');
+                mainMenu.style.display = 'grid';
+            } else {
+                authUi.classList.remove('hidden');
+                mainMenu.style.display = 'none';
+            }
+        });
+
+        document.getElementById('btn-logout').onclick = () => signOut(auth);
+        
+        document.getElementById('btn-delete-acc').onclick = async () => {
+            if(confirm("Naozaj chcete natrvalo zmazať svoj účet a všetky uložené dáta?")) {
+                try { await deleteUser(auth.currentUser); } 
+                catch(e) { alert("Pred zmazaním účtu sa musíte znova prihlásiť."); }
+            }
+        };
+
+        // SAVE / LOAD SYSTEM
+        document.getElementById('btn-saveload').onclick = () => { saveModal.style.display = 'flex'; loadSlots(); };
+        document.getElementById('close-modal').onclick = () => saveModal.style.display = 'none';
+
+        async function loadSlots() {
+            const container = document.getElementById('slots-container');
+            container.innerHTML = "<p style='text-align:center'>Načítavam...</p>";
+            const user = auth.currentUser;
+            try {
+                const docSnap = await getDoc(doc(db, "saves", user.uid));
+                const data = docSnap.exists() ? docSnap.data() : {};
+
+                container.innerHTML = "";
+                for (let i = 1; i <= 4; i++) {
+                    const slot = data[`slot${i}`];
+                    const div = document.createElement('div');
+                    div.className = 'slot';
+                    if (slot) {
+                        div.innerHTML = `
+                            <div class="slot-info">Slot ${i}: ${slot.name}</div>
+                            <div class="slot-btns">
+                                <button class="btn-blue" id="dl-${i}">Stiahnuť</button>
+                                <button class="btn-red" id="del-${i}">Zmazať</button>
+                            </div>`;
+                        container.appendChild(div);
+                        document.getElementById(`dl-${i}`).onclick = () => downloadFile(slot.name, slot.content);
+                        document.getElementById(`del-${i}`).onclick = () => deleteSlot(i);
+                    } else {
+                        div.innerHTML = `
+                            <div class="slot-info" style="color:#94a3b8">Slot ${i}: Prázdny</div>
+                            <button class="btn-green" id="up-${i}">Nahrať .txt</button>`;
+                        container.appendChild(div);
+                        document.getElementById(`up-${i}`).onclick = () => { activeSlot = i; fileInput.click(); };
+                    }
+                }
+            } catch(e) { container.innerHTML = "Chyba načítania: " + e.message; }
+        }
+
+        fileInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file || !activeSlot) return;
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const content = event.target.result;
+                try {
+                    await setDoc(doc(db, "saves", auth.currentUser.uid), { 
+                        [`slot${activeSlot}`]: { name: file.name, content: content } 
+                    }, { merge: true });
+                    loadSlots();
+                } catch(err) { alert("Chyba pri ukladaní: " + err.message); }
+            };
+            reader.readAsText(file);
+        };
+
+        async function deleteSlot(num) {
+            if(!confirm("Zmazať slot " + num + "?")) return;
+            try {
+                await updateDoc(doc(db, "saves", auth.currentUser.uid), { [`slot${num}`]: deleteField() });
+                loadSlots();
+            } catch(e) { alert("Chyba: " + e.message); }
+        }
+
+        function downloadFile(name, content) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = name; a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
